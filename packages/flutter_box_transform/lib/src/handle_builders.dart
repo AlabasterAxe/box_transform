@@ -29,6 +29,18 @@ class CornerHandleWidget extends StatelessWidget {
   /// Called when the handle dragging is canceled.
   final GestureDragCancelCallback? onPanCancel;
 
+  /// Called when the handle dragging starts.
+  final GestureDragStartCallback? onRotateStart;
+
+  /// Called when the handle dragging is updated.
+  final GestureDragUpdateCallback? onRotateUpdate;
+
+  /// Called when the handle dragging ends.
+  final GestureDragEndCallback? onRotateEnd;
+
+  /// Called when the handle dragging is canceled.
+  final GestureDragCancelCallback? onRotateCancel;
+
   /// Whether the handle is resizable.
   final bool enabled;
 
@@ -48,6 +60,10 @@ class CornerHandleWidget extends StatelessWidget {
     this.onPanUpdate,
     this.onPanEnd,
     this.onPanCancel,
+    this.onRotateStart,
+    this.onRotateUpdate,
+    this.onRotateEnd,
+    this.onRotateCancel,
     this.enabled = true,
     this.visible = true,
     this.debugPaintHandleBounds = false,
@@ -57,6 +73,8 @@ class CornerHandleWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget child =
         visible ? builder(context, handlePosition) : const SizedBox.shrink();
+
+    Widget? rotationHandle;
 
     if (enabled) {
       child = GestureDetector(
@@ -68,6 +86,24 @@ class CornerHandleWidget extends StatelessWidget {
         child: MouseRegion(
           cursor: getCursorForHandle(handlePosition),
           child: child,
+        ),
+      );
+      rotationHandle = Positioned(
+        top: handlePosition.influencesTop ? 0 : null,
+        left: handlePosition.influencesLeft ? 0 : null,
+        bottom: handlePosition.influencesBottom ? 0 : null,
+        right: handlePosition.influencesRight ? 0 : null,
+        height: handleTapSize / 2,
+        width: handleTapSize / 2,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onPanStart: onRotateStart,
+          onPanUpdate: onRotateUpdate,
+          onPanEnd: onRotateEnd,
+          onPanCancel: onRotateCancel,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.grabbing,
+          ),
         ),
       );
     }
@@ -86,7 +122,12 @@ class CornerHandleWidget extends StatelessWidget {
       bottom: handlePosition.influencesBottom ? 0 : null,
       width: handleTapSize,
       height: handleTapSize,
-      child: child,
+      child: Stack(
+        children: [
+          child,
+          if (rotationHandle != null) rotationHandle,
+        ],
+      ),
     );
   }
 

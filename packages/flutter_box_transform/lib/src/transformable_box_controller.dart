@@ -44,12 +44,14 @@ class TransformableBoxController extends ChangeNotifier {
     BoxConstraints? constraints,
     ValueGetter<ResizeMode>? resizeModeResolver,
     bool allowFlippingWhileResizing = true,
+    double rotation = 0.0,
   })  : _rect = rect ?? Rect.zero,
         _flip = flip ?? Flip.none,
         _clampingRect = clampingRect ?? Rect.largest,
         _constraints = constraints ?? const BoxConstraints(),
         _resizeModeResolver = resizeModeResolver ?? defaultResizeModeResolver,
-        _allowFlippingWhileResizing = allowFlippingWhileResizing;
+        _allowFlippingWhileResizing = allowFlippingWhileResizing,
+        _rotation = rotation;
 
   /// The callback function that is used to resolve the [ResizeMode] based on
   /// the pressed keys on the keyboard.
@@ -71,6 +73,10 @@ class TransformableBoxController extends ChangeNotifier {
   /// The current [Flip] of the [TransformableBox].
   Flip get flip => _flip;
 
+  double _rotation = 0.0;
+
+  double get rotation => _rotation;
+
   /// The initial [Offset] of the [TransformableBox] when the resizing starts.
   Offset _initialLocalPosition = Offset.zero;
 
@@ -88,6 +94,14 @@ class TransformableBoxController extends ChangeNotifier {
 
   /// The initial [Flip] of the [TransformableBox] when the resizing starts.
   Flip get initialFlip => _initialFlip;
+
+  double _initialBoxRotation = 0.0;
+
+  double get initialBoxRotation => _initialBoxRotation;
+
+  double _initialTapRotation = 0.0;
+
+  double get initialTapRotation => _initialTapRotation;
 
   /// The box that limits the dragging and resizing of the [TransformableBox] inside
   /// its bounds.
@@ -302,6 +316,43 @@ class TransformableBoxController extends ChangeNotifier {
 
   /// Called when the resizing of the [TransformableBox] is cancelled.
   void onResizeCancel({bool notify = true}) => onResizeEnd(notify: notify);
+
+  /// Called when the resizing starts on [TransformableBox].
+  ///
+  /// [localPosition] is the position of the pointer relative to the
+  ///               [TransformableBox] when the resizing starts.
+  void onRotateStart(double rotation) {
+    _initialTapRotation = rotation;
+    _initialBoxRotation = _rotation;
+  }
+
+  /// Called when the [TransformableBox] is being resized.
+  ///
+  /// [localPosition] is the position of the pointer relative to the
+  ///                 [TransformableBox] when the resizing starts.
+  ///                 It is used to calculate the new [Rect] of the
+  ///                 [TransformableBox].
+  ///
+  /// [handle] is the handle that is being dragged.
+  void onRotateUpdate(
+    double rotation, {
+    bool notify = true,
+  }) {
+    _rotation = _initialBoxRotation + (rotation - _initialTapRotation);
+
+    if (notify) notifyListeners();
+  }
+
+  /// Called when the resizing ends on [TransformableBox].
+  void onRotateEnd({bool notify = true}) {
+    _initialBoxRotation = 0;
+    _initialTapRotation = 0;
+
+    if (notify) notifyListeners();
+  }
+
+  /// Called when the resizing of the [TransformableBox] is cancelled.
+  void onRotateCancel({bool notify = true}) => onRotateEnd(notify: notify);
 
   /// Recalculates the current state of this [rect] to ensure the position is
   /// correct in case of extreme jumps of the [TransformableBox].

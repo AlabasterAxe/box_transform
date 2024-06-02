@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:box_transform/box_transform.dart';
@@ -103,6 +104,8 @@ class TransformableBox extends StatefulWidget {
   /// on the state of the box if flipping were to occur.
   final Flip flip;
 
+  final double rotation;
+
   /// A box that will contain the [rect] inside of itself, forcing [rect] to
   /// be clamped inside of this [clampingRect].
   final Rect clampingRect;
@@ -115,6 +118,11 @@ class TransformableBox extends StatefulWidget {
   /// all resizing operations. This is a convenience parameter that will ignore
   /// the [enabledHandles] parameter and set all handles to disabled.
   final bool resizable;
+
+  /// Whether the box is rotatable or not. Setting this to false will disable
+  /// all resizing operations. This is a convenience parameter that will ignore
+  /// the [enabledHandles] parameter and set all handles to disabled.
+  final bool rotatable;
 
   /// Whether the box is movable or not. Setting this to false will disable
   /// all moving operations.
@@ -239,12 +247,14 @@ class TransformableBox extends StatefulWidget {
     Rect? rect,
     Flip? flip,
     Rect? clampingRect,
+    double? rotation,
     BoxConstraints? constraints,
     ValueGetter<ResizeMode>? resizeModeResolver,
 
     // Additional controls.
     this.resizable = true,
     this.draggable = true,
+    this.rotatable = false,
     this.allowFlippingWhileResizing = true,
 
     // Either resize or drag triggers.
@@ -283,6 +293,7 @@ class TransformableBox extends StatefulWidget {
         rect = rect ?? Rect.zero,
         flip = flip ?? Flip.none,
         clampingRect = clampingRect ?? Rect.largest,
+        rotation = rotation ?? 0,
         constraints = constraints ?? const BoxConstraints.expand(),
         resizeModeResolver = resizeModeResolver ?? defaultResizeModeResolver;
 
@@ -324,6 +335,7 @@ class _TransformableBoxState extends State<TransformableBox> {
         constraints: widget.constraints,
         resizeModeResolver: widget.resizeModeResolver,
         allowFlippingWhileResizing: widget.allowFlippingWhileResizing,
+        rotation: pi / 4,
       );
     }
   }
@@ -489,6 +501,48 @@ class _TransformableBoxState extends State<TransformableBox> {
     widget.onTerminalSizeReached?.call(false, false, false, false);
   }
 
+  /// Called when the handle drag starts.
+  void onHandleRotateStart(DragStartDetails event, HandlePosition handle) {
+    // Two fingers were used to start the drag. This produces issues with
+    // the box drag event. Therefore, we ignore it.
+    if (event.kind == PointerDeviceKind.trackpad) {
+      isLegalGesture = false;
+      return;
+    } else {
+      isLegalGesture = true;
+    }
+
+    Offset center = controller.rect.center;
+    Offset delta = event.globalPosition - center;
+
+    controller.onRotateStart(delta.direction);
+  }
+
+  /// Called when the handle drag updates.
+  void onHandleRotateUpdate(DragUpdateDetails event, HandlePosition handle) {
+    if (!isLegalGesture) return;
+
+    Offset center = controller.rect.center;
+    Offset delta = event.globalPosition - center;
+
+    controller.onRotateUpdate(delta.direction);
+
+    setState(() => {});
+  }
+
+  /// Called when the handle drag ends.
+  void onHandleRotateEnd(DragEndDetails event, HandlePosition handle) {
+    if (!isLegalGesture) return;
+
+    controller.onRotateEnd();
+  }
+
+  void onHandleRotateCancel(HandlePosition handle) {
+    if (!isLegalGesture) return;
+
+    controller.onRotateCancel();
+  }
+
   /// Called when the box drag event starts.
   void onDragPanStart(DragStartDetails event) {
     // Two fingers were used to start the drag. This produces issues with
@@ -555,50 +609,58 @@ class _TransformableBoxState extends State<TransformableBox> {
 
     return Positioned.fromRect(
       rect: rect.inflate(widget.handleAlignment.offset(widget.handleTapSize)),
-      child: Stack(
-        clipBehavior: Clip.none,
-        fit: StackFit.expand,
-        children: [
-          Positioned(
-            left: widget.handleAlignment.offset(widget.handleTapSize),
-            top: widget.handleAlignment.offset(widget.handleTapSize),
-            width: rect.width,
-            height: rect.height,
-            child: content,
-          ),
-          if (widget.resizable)
-            for (final handle in HandlePosition.corners.where((handle) =>
-                widget.visibleHandles.contains(handle) ||
-                widget.enabledHandles.contains(handle)))
-              CornerHandleWidget(
-                key: ValueKey(handle),
-                handlePosition: handle,
-                handleTapSize: widget.handleTapSize,
-                enabled: widget.enabledHandles.contains(handle),
-                visible: widget.visibleHandles.contains(handle),
-                onPanStart: (event) => onHandlePanStart(event, handle),
-                onPanUpdate: (event) => onHandlePanUpdate(event, handle),
-                onPanEnd: (event) => onHandlePanEnd(event, handle),
-                onPanCancel: () => onHandlePanCancel(handle),
-                builder: widget.cornerHandleBuilder,
-              ),
-          if (widget.resizable)
-            for (final handle in HandlePosition.sides.where((handle) =>
-                widget.visibleHandles.contains(handle) ||
-                widget.enabledHandles.contains(handle)))
-              SideHandleWidget(
-                key: ValueKey(handle),
-                handlePosition: handle,
-                handleTapSize: widget.handleTapSize,
-                enabled: widget.enabledHandles.contains(handle),
-                visible: widget.visibleHandles.contains(handle),
-                onPanStart: (event) => onHandlePanStart(event, handle),
-                onPanUpdate: (event) => onHandlePanUpdate(event, handle),
-                onPanEnd: (event) => onHandlePanEnd(event, handle),
-                onPanCancel: () => onHandlePanCancel(handle),
-                builder: widget.sideHandleBuilder,
-              ),
-        ],
+      child: Transform.rotate(
+        angle: controller.rotation,
+        child: Stack(
+          clipBehavior: Clip.none,
+          fit: StackFit.expand,
+          children: [
+            Positioned(
+              left: widget.handleAlignment.offset(widget.handleTapSize),
+              top: widget.handleAlignment.offset(widget.handleTapSize),
+              width: rect.width,
+              height: rect.height,
+              child: content,
+            ),
+            if (widget.resizable)
+              for (final handle in HandlePosition.corners.where((handle) =>
+                  widget.visibleHandles.contains(handle) ||
+                  widget.enabledHandles.contains(handle)))
+                CornerHandleWidget(
+                  key: ValueKey(handle),
+                  handlePosition: handle,
+                  handleTapSize: widget.handleTapSize,
+                  enabled: widget.enabledHandles.contains(handle),
+                  visible: widget.visibleHandles.contains(handle),
+                  onPanStart: (event) => onHandlePanStart(event, handle),
+                  onPanUpdate: (event) => onHandlePanUpdate(event, handle),
+                  onPanEnd: (event) => onHandlePanEnd(event, handle),
+                  onPanCancel: () => onHandlePanCancel(handle),
+                  onRotateStart: (event) => onHandleRotateStart(event, handle),
+                  onRotateUpdate: (event) =>
+                      onHandleRotateUpdate(event, handle),
+                  onRotateEnd: (event) => onHandleRotateEnd(event, handle),
+                  onRotateCancel: () => onHandleRotateCancel(handle),
+                  builder: widget.cornerHandleBuilder,
+                ),
+            if (widget.resizable)
+              for (final handle in HandlePosition.sides.where((handle) =>
+                  widget.visibleHandles.contains(handle) ||
+                  widget.enabledHandles.contains(handle)))
+                SideHandleWidget(
+                  key: ValueKey(handle),
+                  handlePosition: handle,
+                  handleTapSize: widget.handleTapSize,
+                  enabled: widget.enabledHandles.contains(handle),
+                  visible: widget.visibleHandles.contains(handle),
+                  onPanStart: (event) => onHandlePanStart(event, handle),
+                  onPanUpdate: (event) => onHandlePanUpdate(event, handle),
+                  onPanEnd: (event) => onHandlePanEnd(event, handle),
+                  onPanCancel: () => onHandlePanCancel(handle),
+                  builder: widget.sideHandleBuilder,
+                ),
+          ],
+        ),
       ),
     );
   }
