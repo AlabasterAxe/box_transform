@@ -335,7 +335,6 @@ class _TransformableBoxState extends State<TransformableBox> {
         constraints: widget.constraints,
         resizeModeResolver: widget.resizeModeResolver,
         allowFlippingWhileResizing: widget.allowFlippingWhileResizing,
-        rotation: pi / 2,
       );
     }
   }
