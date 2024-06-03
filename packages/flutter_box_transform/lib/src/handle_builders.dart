@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:box_transform/box_transform.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -50,6 +52,9 @@ class CornerHandleWidget extends StatelessWidget {
   /// Whether to paint the handle's bounds for debugging purposes.
   final bool debugPaintHandleBounds;
 
+  /// Rotation of the handle.
+  final double rotation;
+
   /// Creates a new handle widget.
   CornerHandleWidget({
     super.key,
@@ -67,6 +72,7 @@ class CornerHandleWidget extends StatelessWidget {
     this.enabled = true,
     this.visible = true,
     this.debugPaintHandleBounds = false,
+    this.rotation = 0.0,
   }) : assert(handlePosition.isDiagonal, 'A corner handle must be diagonal.');
 
   @override
@@ -84,7 +90,7 @@ class CornerHandleWidget extends StatelessWidget {
         onPanEnd: onPanEnd,
         onPanCancel: onPanCancel,
         child: MouseRegion(
-          cursor: getCursorForHandle(handlePosition),
+          cursor: getCursorForHandle(handlePosition, rotation),
           child: child,
         ),
       );
@@ -102,7 +108,7 @@ class CornerHandleWidget extends StatelessWidget {
           onPanEnd: onRotateEnd,
           onPanCancel: onRotateCancel,
           child: MouseRegion(
-            cursor: SystemMouseCursors.grabbing,
+            cursor: getCursorForHandle(handlePosition, rotation + pi / 2),
           ),
         ),
       );
@@ -132,17 +138,26 @@ class CornerHandleWidget extends StatelessWidget {
   }
 
   /// Returns the cursor for the given handle position.
-  MouseCursor getCursorForHandle(HandlePosition handle) {
-    switch (handle) {
-      case HandlePosition.topLeft:
-      case HandlePosition.bottomRight:
-        return SystemMouseCursors.resizeUpLeftDownRight;
-      case HandlePosition.topRight:
-      case HandlePosition.bottomLeft:
-        return SystemMouseCursors.resizeUpRightDownLeft;
-      default:
-        throw Exception('Invalid handle position.');
+  MouseCursor getCursorForHandle(HandlePosition handle, [double? rotation]) {
+    if (rotation == null) {
+      return switch (handle) {
+        HandlePosition.topLeft ||
+        HandlePosition.bottomRight =>
+          SystemMouseCursors.resizeUpLeftDownRight,
+        HandlePosition.topRight ||
+        HandlePosition.bottomLeft =>
+          SystemMouseCursors.resizeUpRightDownLeft,
+        HandlePosition.top ||
+        HandlePosition.bottom =>
+          SystemMouseCursors.resizeUpDown,
+        HandlePosition.left ||
+        HandlePosition.right =>
+          SystemMouseCursors.resizeLeftRight,
+        _ => throw Exception('Invalid handle position.'),
+      };
     }
+
+    return getCursorForHandle(handle.rotate(rotation));
   }
 }
 
@@ -180,6 +195,9 @@ class SideHandleWidget extends StatelessWidget {
   /// Whether to paint the handle's bounds for debugging purposes.
   final bool debugPaintHandleBounds;
 
+  /// The rotation of the handle.
+  final double rotation;
+
   /// Creates a new handle widget.
   SideHandleWidget({
     super.key,
@@ -193,6 +211,7 @@ class SideHandleWidget extends StatelessWidget {
     this.enabled = true,
     this.visible = true,
     this.debugPaintHandleBounds = false,
+    this.rotation = 0.0,
   }) : assert(handlePosition.isSide, 'A cardinal handle must be cardinal.');
 
   @override
@@ -249,7 +268,7 @@ class SideHandleWidget extends StatelessWidget {
   }
 
   /// Returns the cursor for the given handle position.
-  MouseCursor getCursorForHandle(HandlePosition handle) {
+  MouseCursor getCursorForHandle(HandlePosition handle, [double rotation = 0]) {
     switch (handle) {
       case HandlePosition.left:
       case HandlePosition.right:

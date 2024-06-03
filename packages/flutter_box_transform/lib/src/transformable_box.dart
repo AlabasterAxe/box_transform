@@ -642,6 +642,7 @@ class _TransformableBoxState extends State<TransformableBox> {
                   onRotateEnd: (event) => onHandleRotateEnd(event, handle),
                   onRotateCancel: () => onHandleRotateCancel(handle),
                   builder: widget.cornerHandleBuilder,
+                  rotation: controller.rotation,
                 ),
             if (widget.resizable)
               for (final handle in HandlePosition.sides.where((handle) =>

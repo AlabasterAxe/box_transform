@@ -47,6 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
           TransformableBox(
             rect: rect,
+            handleTapSize: 36,
             clampingRect: Offset.zero & MediaQuery.sizeOf(context),
             onChanged: (result, event) {
               setState(() {

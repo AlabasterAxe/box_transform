@@ -293,9 +293,6 @@ class TransformableBoxController extends ChangeNotifier {
         dragDeltaScreenSpace.direction - _rotation,
         dragDeltaScreenSpace.distance);
 
-    print(handle);
-    print(transformedDelta);
-
     // Calculate the new rect based on the initial rect, initial local position,
     final UIResizeResult result = UIBoxTransform.resize(
       localPosition: transformedDelta,
@@ -313,7 +310,6 @@ class TransformableBoxController extends ChangeNotifier {
     final rectAdjustment = (transformedDelta - dragDeltaScreenSpace) *
         -adjustmentMagnitude.toDouble();
 
-    print(adjustmentMagnitude);
     _rect = result.rect.translate(rectAdjustment.dx, rectAdjustment.dy);
     _flip = result.flip;
 

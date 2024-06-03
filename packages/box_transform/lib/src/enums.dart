@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:vector_math/vector_math.dart';
 
 import 'geometry.dart';
@@ -104,6 +106,17 @@ enum HandlePosition {
     HandlePosition.bottom,
     HandlePosition.left,
     HandlePosition.right,
+  ];
+
+  static const List<HandlePosition> _rotationOrder = [
+    HandlePosition.topLeft,
+    HandlePosition.top,
+    HandlePosition.topRight,
+    HandlePosition.right,
+    HandlePosition.bottomRight,
+    HandlePosition.bottom,
+    HandlePosition.bottomLeft,
+    HandlePosition.left,
   ];
 
   /// Returns the opposite handle position on the horizontal axis.
@@ -231,6 +244,15 @@ enum HandlePosition {
       case HandlePosition.none:
         return 'None';
     }
+  }
+
+  /// Rotates the handle position by the given [rotation] in radians.
+  HandlePosition rotate(double rotation) {
+    final moddedRotation = (rotation + pi / 8) % (2 * pi);
+    final index = _rotationOrder.indexOf(this);
+    final rotationHops = moddedRotation ~/ (pi / 4);
+    final newIndex = (index + rotationHops) % _rotationOrder.length;
+    return _rotationOrder[newIndex];
   }
 }
 
