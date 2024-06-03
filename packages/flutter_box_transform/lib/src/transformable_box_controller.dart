@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:box_transform/box_transform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -266,7 +268,7 @@ class TransformableBoxController extends ChangeNotifier {
   ///
   /// [localPosition] is the position of the pointer relative to the
   ///               [TransformableBox] when the resizing starts.
-  void onResizeStart(Offset localPosition) {
+  void onResizeStart(Offset localPosition, HandlePosition handle) {
     _initialLocalPosition = localPosition;
     _initialRect = rect;
     _initialFlip = flip;
@@ -285,12 +287,21 @@ class TransformableBoxController extends ChangeNotifier {
     HandlePosition handle, {
     bool notify = true,
   }) {
+    final dragDeltaScreenSpace = localPosition - initialLocalPosition;
+
+    final transformedDelta = Offset.fromDirection(
+        dragDeltaScreenSpace.direction - _rotation,
+        dragDeltaScreenSpace.distance);
+
+    print(handle);
+    print(transformedDelta);
+
     // Calculate the new rect based on the initial rect, initial local position,
     final UIResizeResult result = UIBoxTransform.resize(
-      localPosition: localPosition,
+      localPosition: transformedDelta,
       handle: handle,
       initialRect: initialRect,
-      initialLocalPosition: initialLocalPosition,
+      initialLocalPosition: Offset.zero,
       resizeMode: resizeModeResolver(),
       initialFlip: initialFlip,
       clampingRect: clampingRect,
@@ -298,11 +309,29 @@ class TransformableBoxController extends ChangeNotifier {
       allowFlipping: allowFlippingWhileResizing,
     );
 
-    _rect = result.rect;
+    final adjustmentMagnitude = 1 - ((cos(_rotation) / 2) + .5);
+    final rectAdjustment = (transformedDelta - dragDeltaScreenSpace) *
+        -adjustmentMagnitude.toDouble();
+
+    print(adjustmentMagnitude);
+    _rect = result.rect.translate(rectAdjustment.dx, rectAdjustment.dy);
     _flip = result.flip;
 
     if (notify) notifyListeners();
-    return result;
+    return ResizeResult(
+      rect: _rect,
+      oldRect: initialRect,
+      flip: _flip,
+      resizeMode: result.resizeMode,
+      delta: result.delta,
+      rawSize: _rect.size,
+      minWidthReached: result.minWidthReached,
+      maxWidthReached: result.maxWidthReached,
+      minHeightReached: result.minHeightReached,
+      maxHeightReached: result.maxHeightReached,
+      largestRect: result.largestRect,
+      handle: handle,
+    );
   }
 
   /// Called when the resizing ends on [TransformableBox].

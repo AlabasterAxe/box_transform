@@ -335,7 +335,7 @@ class _TransformableBoxState extends State<TransformableBox> {
         constraints: widget.constraints,
         resizeModeResolver: widget.resizeModeResolver,
         allowFlippingWhileResizing: widget.allowFlippingWhileResizing,
-        rotation: pi / 4,
+        rotation: pi / 2,
       );
     }
   }
@@ -437,7 +437,7 @@ class _TransformableBoxState extends State<TransformableBox> {
       isLegalGesture = true;
     }
 
-    controller.onResizeStart(event.localPosition);
+    controller.onResizeStart(event.globalPosition, handle);
     widget.onResizeStart?.call(handle, event);
   }
 
@@ -446,7 +446,7 @@ class _TransformableBoxState extends State<TransformableBox> {
     if (!isLegalGesture) return;
 
     final UIResizeResult result = controller.onResizeUpdate(
-      event.localPosition,
+      event.globalPosition,
       handle,
     );
 
@@ -554,7 +554,7 @@ class _TransformableBoxState extends State<TransformableBox> {
       isLegalGesture = true;
     }
 
-    controller.onDragStart(event.localPosition);
+    controller.onDragStart(event.globalPosition);
     widget.onDragStart?.call(event);
   }
 
@@ -563,7 +563,7 @@ class _TransformableBoxState extends State<TransformableBox> {
     if (!isLegalGesture) return;
 
     final UIMoveResult result = controller.onDragUpdate(
-      event.localPosition,
+      event.globalPosition,
     );
 
     widget.onChanged?.call(result, event);

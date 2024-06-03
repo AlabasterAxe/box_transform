@@ -152,6 +152,8 @@ class BoxTransformer {
       allowFlipping: allowFlipping,
     );
 
+    print(explodedRect);
+
     final Resizer resizer = Resizer.from(resizeMode);
     final result = resizer.resize(
       explodedRect: explodedRect,
