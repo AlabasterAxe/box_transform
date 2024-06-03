@@ -79,7 +79,7 @@ class DefaultCornerHandle extends StatelessWidget {
   /// Default decoration of the handle.
   static Decoration defaultDecoration(BuildContext context) {
     return BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).scaffoldBackgroundColor,
       shape: BoxShape.circle,
       border: Border.all(
         color: Theme.of(context).colorScheme.primary,
